@@ -22,10 +22,10 @@ public class SongGeneratorService : ISongGeneratorService
     {
         var locale = _localeData.Get(request.Locale);
         long pageSeed = CombineSeed(request.Seed, request.Page);
-        var contentRng = new Random((int)(pageSeed & 0x7FFFFFFF));
+        var contentRng = DeterministicRandom64.Create(pageSeed, 0xC0DEC0DEC0DEC0DEUL);
 
         long likesSeed = CombineSeed(request.Seed ^ 0xDEADBEEFL, request.Page);
-        var likesRng = new Random((int)(likesSeed & 0x7FFFFFFF));
+        var likesRng = DeterministicRandom64.Create(likesSeed, 0x1A2B3C4D5E6F7788UL);
 
         int startIndex = (request.Page - 1) * request.PageSize + 1;
 
@@ -52,7 +52,7 @@ public class SongGeneratorService : ISongGeneratorService
         int posInPage = (recordIndex - 1) % request.PageSize;
 
         long pageSeed = CombineSeed(request.Seed, page);
-        var contentRng = new Random((int)(pageSeed & 0x7FFFFFFF));
+        var contentRng = DeterministicRandom64.Create(pageSeed, 0xC0DEC0DEC0DEC0DEUL);
 
         string title = "", artist = "", album = "", genre = "";
         for (int i = 0; i <= posInPage; i++)
@@ -64,22 +64,22 @@ public class SongGeneratorService : ISongGeneratorService
         }
 
         long likesSeed = CombineSeed(request.Seed ^ 0xDEADBEEFL, page);
-        var likesRng = new Random((int)(likesSeed & 0x7FFFFFFF));
+        var likesRng = DeterministicRandom64.Create(likesSeed, 0x1A2B3C4D5E6F7788UL);
         int likes = 0;
         for (int i = 0; i <= posInPage; i++)
             likes = LikesGenerator.GenerateLikes(request.LikesPerSong, likesRng);
 
         long reviewSeed = CombineSeedForRecord(request.Seed, recordIndex);
-        var reviewRng = new Random((int)(reviewSeed & 0x7FFFFFFF));
+        var reviewRng = DeterministicRandom64.Create(reviewSeed, 0x99AA22BB33CC44DDUL);
         string review = GenerateReview(locale, reviewRng);
 
         long audioSeed = CombineSeedForRecord(request.Seed, recordIndex);
-        var durationRng = new Random((int)(audioSeed & 0x7FFFFFFF));
+        var durationRng = DeterministicRandom64.Create(audioSeed, 0x0A0D10A0D10A0D10UL);
         int bpm = 80 + durationRng.Next(60);
         double beatDuration = 60.0 / bpm;
         double duration = 8 * 4 * beatDuration;
         long lyricsSeed = CombineSeedForRecord(request.Seed ^ 0xBEEFCAFEL, recordIndex);
-        var lyricsRng = new Random((int)(lyricsSeed & 0x7FFFFFFF));
+        var lyricsRng = DeterministicRandom64.Create(lyricsSeed, 0x5555AAAACCCCDDDDUL);
         var lyrics = GenerateLyrics(locale, lyricsRng, duration, title);
 
         return new SongDetail
@@ -97,7 +97,7 @@ public class SongGeneratorService : ISongGeneratorService
         };
     }
 
-    private List<LyricsLine> GenerateLyrics(LocaleDataModel locale, Random rng, double duration, string title)
+    private List<LyricsLine> GenerateLyrics(LocaleDataModel locale, DeterministicRandom64 rng, double duration, string title)
     {
         var lines = new List<LyricsLine>();
         if (locale.LyricsVerbs.Count == 0) return lines;
@@ -124,7 +124,7 @@ public class SongGeneratorService : ISongGeneratorService
         return lines;
     }
 
-    private string GenerateVerseLine(LocaleDataModel locale, Random rng)
+    private string GenerateVerseLine(LocaleDataModel locale, DeterministicRandom64 rng)
     {
         int pattern = rng.Next(4);
         return pattern switch
@@ -136,7 +136,7 @@ public class SongGeneratorService : ISongGeneratorService
         };
     }
 
-    private string GenerateChorusLine(LocaleDataModel locale, Random rng, int lineIdx, string title)
+    private string GenerateChorusLine(LocaleDataModel locale, DeterministicRandom64 rng, int lineIdx, string title)
     {
         if (lineIdx == 0)
             return $"{Pick(locale.LyricsChorusStarters, rng)} {Pick(locale.LyricsVerbs, rng)} {Pick(locale.LyricsFillers, rng)}";
@@ -145,7 +145,7 @@ public class SongGeneratorService : ISongGeneratorService
         return $"{Pick(locale.LyricsAdjectives, rng)} like the {Pick(locale.LyricsNouns, rng)} {Pick(locale.LyricsFillers, rng)}";
     }
 
-    private string GenerateTitle(LocaleDataModel locale, Random rng)
+    private string GenerateTitle(LocaleDataModel locale, DeterministicRandom64 rng)
     {
         bool threeWords = rng.NextDouble() < 0.3;
         string adj = Pick(locale.AlbumAdjectives, rng);
@@ -158,7 +158,7 @@ public class SongGeneratorService : ISongGeneratorService
         return $"{adj} {noun1}";
     }
 
-    private string GenerateArtist(LocaleDataModel locale, Random rng)
+    private string GenerateArtist(LocaleDataModel locale, DeterministicRandom64 rng)
     {
         bool isBand = rng.NextDouble() < 0.5;
         if (isBand)
@@ -166,16 +166,16 @@ public class SongGeneratorService : ISongGeneratorService
         return $"{Pick(locale.FirstNames, rng)} {Pick(locale.LastNames, rng)}";
     }
 
-    private string GenerateAlbum(LocaleDataModel locale, Random rng)
+    private string GenerateAlbum(LocaleDataModel locale, DeterministicRandom64 rng)
     {
         if (rng.NextDouble() < 0.25) return "Single";
         return $"{Pick(locale.AlbumAdjectives, rng)} {Pick(locale.AlbumNouns, rng)}";
     }
 
-    private string GenerateReview(LocaleDataModel locale, Random rng)
+    private string GenerateReview(LocaleDataModel locale, DeterministicRandom64 rng)
         => $"{Pick(locale.ReviewPhrases, rng)} {Pick(locale.ReviewConnectors, rng)}.";
 
-    private static T Pick<T>(List<T> list, Random rng)
+    private static T Pick<T>(List<T> list, DeterministicRandom64 rng)
         => list[rng.Next(list.Count)];
 
     private static string CapFirst(string s)

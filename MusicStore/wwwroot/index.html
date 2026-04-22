@@ -19,7 +19,7 @@
 
   <div class="ctrl-group">
     <label for="seed-input">Seed</label>
-    <input type="number" id="seed-input" value="42" min="0" step="1" />
+    <input type="text" id="seed-input" value="42" inputmode="numeric" pattern="-?[0-9]+" />
     <button class="icon-btn" id="rand-seed-btn" title="Randomize seed">🎲</button>
   </div>
 
@@ -30,7 +30,7 @@
   </div>
 
   <div class="ctrl-group">
-    <button class="icon-btn export-btn" id="export-btn" title="Export current page as ZIP of WAV files">⬇ Export ZIP</button>
+    <button class="icon-btn export-btn" id="export-btn" title="Export current page as ZIP of MP3 files">⬇ Export ZIP</button>
   </div>
 
   <div class="view-toggle">

@@ -11,6 +11,7 @@ const state = {
   galleryExhausted: false,
   expandedIndex: null,
   playingIndex: null,
+  playingAudio: null,
   playingDetail: null,
   playStartTime: null,
   lyricsInterval: null,
@@ -57,11 +58,6 @@ async function fetchDetail(recordIndex) {
   return r.json();
 }
 
-async function fetchExportManifest(page) {
-  const r = await fetch(`/api/songs/export-manifest?${buildQuery({ page, pageSize: state.pageSize })}`);
-  return r.json();
-}
-
 function likesHtml(count) {
   let d = '';
   for (let i = 0; i < 10; i++)
@@ -70,8 +66,29 @@ function likesHtml(count) {
 }
 
 function randomBigInt64() {
-  return (BigInt(Math.floor(Math.random()*0x100000000)) << 32n)
-       | BigInt(Math.floor(Math.random()*0x100000000));
+  const hi = BigInt(Math.floor(Math.random() * 0x80000000));
+  const lo = BigInt(Math.floor(Math.random() * 0x100000000));
+  const v = (hi << 32n) | lo;
+  return Math.random() < 0.5 ? -v : v;
+}
+
+const I64_MIN = -9223372036854775808n;
+const I64_MAX =  9223372036854775807n;
+
+function parseSeedInput(raw) {
+  const s = (raw ?? '').trim();
+  if (!/^[-]?\d+$/.test(s)) return null;
+
+  let v;
+  try {
+    v = BigInt(s);
+  } catch {
+    return null;
+  }
+
+  if (v < I64_MIN) return I64_MIN;
+  if (v > I64_MAX) return I64_MAX;
+  return v;
 }
 
 // ── Table View ────────────────────────────────────────────────────────────────
@@ -161,7 +178,8 @@ async function toggleExpand(recordIndex, tr) {
 
   // Draw cover
   const canvas = document.getElementById(cid);
-  CoverCanvas.drawCover(canvas, detail.title, detail.artist, detail.audioSeed);
+  const coverSeed = state.seed ^ (BigInt(recordIndex) * 2654435761n);
+  CoverCanvas.drawCover(canvas, detail.title, detail.artist, coverSeed);
 
   // Play button
   const playBtn = document.getElementById(`play-btn-${recordIndex}`);
@@ -176,28 +194,57 @@ async function toggleExpand(recordIndex, tr) {
   });
 }
 
-function startMusic(recordIndex, detail, playBtn) {
+async function startMusic(recordIndex, detail, playBtn) {
   state.playingIndex  = recordIndex;
   state.playingDetail = detail;
-  state.playStartTime = Tone.now();
+  state.playStartTime = performance.now() / 1000;
   playBtn.textContent = '⏹';
   playBtn.classList.add('playing');
 
-  AudioEngine.play(detail.audioSeed, () => {
+  const src = `/api/songs/audio?${buildQuery({ recordIndex, pageSize: state.pageSize })}`;
+  const audio = new Audio(src);
+  state.playingAudio = audio;
+
+  audio.addEventListener('ended', () => {
     if (state.playingIndex === recordIndex) {
       playBtn.textContent = '▶';
       playBtn.classList.remove('playing');
       state.playingIndex = null;
+      state.playingAudio = null;
       stopLyricsScroll();
     }
   });
 
-  startLyricsScroll(recordIndex, detail);
+  audio.addEventListener('error', () => {
+    if (state.playingIndex === recordIndex) {
+      playBtn.textContent = '▶';
+      playBtn.classList.remove('playing');
+      state.playingIndex = null;
+      state.playingAudio = null;
+      stopLyricsScroll();
+      alert('Audio preview failed to load.');
+    }
+  });
+
+  try {
+    await audio.play();
+    startLyricsScroll(recordIndex, detail);
+  } catch {
+    playBtn.textContent = '▶';
+    playBtn.classList.remove('playing');
+    state.playingIndex = null;
+    state.playingAudio = null;
+    stopLyricsScroll();
+  }
 }
 
 function stopMusic() {
   if (state.playingIndex !== null) {
-    AudioEngine.stop();
+    if (state.playingAudio) {
+      state.playingAudio.pause();
+      state.playingAudio.src = '';
+      state.playingAudio = null;
+    }
     const btn = document.getElementById(`play-btn-${state.playingIndex}`);
     if (btn) { btn.textContent = '▶'; btn.classList.remove('playing'); }
     state.playingIndex = null;
@@ -364,16 +411,10 @@ async function doExport() {
   elExportBtn.textContent = '⏳ Exporting…';
 
   try {
-    const manifest = await fetchExportManifest(state.currentPage);
-    const zip = new JSZip();
+    const response = await fetch(`/api/songs/export-zip?${buildQuery({ page: state.currentPage, pageSize: state.pageSize })}`);
+    if (!response.ok) throw new Error(`Export failed (${response.status})`);
 
-    for (const song of manifest) {
-      // Render audio offline using OfflineAudioContext (WAV-like PCM)
-      const wavData = await renderAudioToWav(song.audioSeed, song.durationSeconds);
-      zip.file(song.fileName.replace(/\.wav$/, '') + '.wav', wavData);
-    }
-
-    const blob = await zip.generateAsync({ type: 'blob' });
+    const blob = await response.blob();
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
@@ -387,132 +428,6 @@ async function doExport() {
 
   elExportBtn.disabled    = false;
   elExportBtn.textContent = '⬇ Export ZIP';
-}
-
-async function renderAudioToWav(audioSeed, durationSeconds) {
-  const sampleRate = 44100;
-  const duration   = Math.max(2, Math.min(durationSeconds + 1, 45));
-  const offCtx     = new OfflineAudioContext(2, Math.ceil(sampleRate * duration), sampleRate);
-
-  // Use a stripped-down version of the audio engine for offline rendering
-  const rand = mkRngExport(audioSeed);
-
-  const SCALES_EXP = {
-    major:[0,2,4,5,7,9,11], minor:[0,2,3,5,7,8,10],
-    pentatonic:[0,2,4,7,9]
-  };
-  const scaleNames = Object.keys(SCALES_EXP);
-  const scale = SCALES_EXP[scaleNames[Math.floor(rand() * scaleNames.length)]];
-  const rootMidi = 48 + Math.floor(rand() * 12);
-  const bpm = 80 + Math.floor(rand() * 60);
-  const beatDur = 60 / bpm;
-  const numBars = 20, beatsPerBar = 4, totalBeats = numBars * beatsPerBar;
-
-  const masterGain = offCtx.createGain();
-  masterGain.gain.value = 0.55;
-  masterGain.connect(offCtx.destination);
-
-  function midiHz(m) { return 440 * Math.pow(2, (m-69)/12); }
-
-  function osc(type, freq, gainVal, t, dur) {
-    const o = offCtx.createOscillator();
-    const g = offCtx.createGain();
-    o.type = type; o.frequency.value = freq;
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(gainVal, t + 0.02);
-    g.gain.setValueAtTime(gainVal, t + dur - 0.04);
-    g.gain.linearRampToValueAtTime(0, t + dur);
-    o.connect(g); g.connect(masterGain);
-    o.start(t); o.stop(t + dur + 0.01);
-  }
-
-  const PROGS = [[0,5,3,4],[0,3,4,0],[0,4,5,3]];
-  const prog  = PROGS[Math.floor(rand() * PROGS.length)];
-
-  for (let bar = 0; bar < numBars; bar++) {
-    const deg = prog[bar % prog.length];
-    for (let beat = 0; beat < beatsPerBar; beat++) {
-      const t = bar * beatsPerBar * beatDur + beat * beatDur + 0.05;
-      // Chord pad
-      if (beat === 0) {
-        [0,2,4].forEach(d => {
-          const midi = rootMidi + scale[(deg+d) % scale.length];
-          osc('sine', midiHz(midi), 0.1, t, beatDur * beatsPerBar * 0.9);
-        });
-      }
-      // Bass
-      if ((beat === 0 || beat === 2) && rand() < 0.8) {
-        const midi = rootMidi + scale[deg % scale.length] - 12;
-        osc('sawtooth', midiHz(midi), 0.15, t, beatDur * 0.6);
-      }
-      // Melody
-      if (rand() < 0.45) {
-        const si = Math.floor(rand() * scale.length);
-        osc('triangle', midiHz(rootMidi + scale[si] + 12), 0.07, t, beatDur * 0.35);
-      }
-      // Kick
-      if (beat % 2 === 0) {
-        const ko = offCtx.createOscillator();
-        const kg = offCtx.createGain();
-        ko.frequency.setValueAtTime(150, t);
-        ko.frequency.exponentialRampToValueAtTime(40, t+0.12);
-        kg.gain.setValueAtTime(0.7, t);
-        kg.gain.exponentialRampToValueAtTime(0.001, t+0.25);
-        ko.connect(kg); kg.connect(masterGain);
-        ko.start(t); ko.stop(t+0.3);
-      }
-    }
-  }
-
-  const rendered = await offCtx.startRendering();
-  return audioBufferToWav(rendered);
-}
-
-function mkRngExport(seed) {
-  let s = (Number(seed) & 0x7FFFFFFF) >>> 0 || 1;
-  return () => {
-    s |= 0; s = s + 0x6D2B79F5 | 0;
-    let t = Math.imul(s ^ s >>> 15, 1 | s);
-    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-    return ((t ^ t >>> 14) >>> 0) / 4294967296;
-  };
-}
-
-function audioBufferToWav(buffer) {
-  const numChannels = buffer.numberOfChannels;
-  const sampleRate  = buffer.sampleRate;
-  const numSamples  = buffer.length;
-  const bytesPerSample = 2;
-  const dataSize = numChannels * numSamples * bytesPerSample;
-  const ab = new ArrayBuffer(44 + dataSize);
-  const view = new DataView(ab);
-
-  function writeStr(offset, str) {
-    for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i));
-  }
-  writeStr(0, 'RIFF');
-  view.setUint32(4,  36 + dataSize, true);
-  writeStr(8, 'WAVE');
-  writeStr(12, 'fmt ');
-  view.setUint32(16, 16, true);
-  view.setUint16(20, 1, true);   // PCM
-  view.setUint16(22, numChannels, true);
-  view.setUint32(24, sampleRate, true);
-  view.setUint32(28, sampleRate * numChannels * bytesPerSample, true);
-  view.setUint16(32, numChannels * bytesPerSample, true);
-  view.setUint16(34, 16, true);
-  writeStr(36, 'data');
-  view.setUint32(40, dataSize, true);
-
-  let offset = 44;
-  for (let i = 0; i < numSamples; i++) {
-    for (let ch = 0; ch < numChannels; ch++) {
-      const sample = Math.max(-1, Math.min(1, buffer.getChannelData(ch)[i]));
-      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
-      offset += 2;
-    }
-  }
-  return ab;
 }
 
 // ── View switching ────────────────────────────────────────────────────────────
@@ -542,7 +457,13 @@ function onParamsChanged() {
 // ── Event listeners ───────────────────────────────────────────────────────────
 elLocale.addEventListener('change',  () => { state.locale = elLocale.value; onParamsChanged(); });
 elSeed.addEventListener('input',     () => {
-  try { state.seed = BigInt(elSeed.value.trim() || '0'); onParamsChanged(); } catch(e){}
+  const parsed = parseSeedInput(elSeed.value);
+  if (parsed === null) return;
+  state.seed = parsed;
+  if (elSeed.value.trim() !== parsed.toString()) {
+    elSeed.value = parsed.toString();
+  }
+  onParamsChanged();
 });
 elRandSeed.addEventListener('click', () => {
   const r = randomBigInt64(); state.seed = r; elSeed.value = r.toString(); onParamsChanged();

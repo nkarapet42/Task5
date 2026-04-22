@@ -1,14 +1,27 @@
 // ── Professional Album Cover Generator ───────────────────────────────────────
 const CoverCanvas = (() => {
 
-  // Mulberry32 seeded RNG
+  const U64_MASK = (1n << 64n) - 1n;
+
+  function normalizeSeed(seed) {
+    try {
+      if (typeof seed === 'bigint') return BigInt.asUintN(64, seed);
+      if (typeof seed === 'number') return BigInt.asUintN(64, BigInt(Math.trunc(seed)));
+      if (typeof seed === 'string' && seed.trim().length > 0) return BigInt.asUintN(64, BigInt(seed.trim()));
+    } catch {}
+    return 0n;
+  }
+
+  // SplitMix64 seeded RNG (full 64-bit)
   function mkRng(seed) {
-    let s = seed >>> 0;
+    let s = normalizeSeed(seed);
     return () => {
-      s |= 0; s = s + 0x6D2B79F5 | 0;
-      let t = Math.imul(s ^ s >>> 15, 1 | s);
-      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
-      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      s = (s + 0x9E3779B97F4A7C15n) & U64_MASK;
+      let z = s;
+      z = ((z ^ (z >> 30n)) * 0xBF58476D1CE4E5B9n) & U64_MASK;
+      z = ((z ^ (z >> 27n)) * 0x94D049BB133111EBn) & U64_MASK;
+      z = (z ^ (z >> 31n)) & U64_MASK;
+      return Number(z >> 11n) / 9007199254740992;
     };
   }
 
@@ -282,7 +295,7 @@ const CoverCanvas = (() => {
   function drawCover(canvas, title, artist, audioSeed) {
     const size = canvas.width;
     const ctx = canvas.getContext('2d');
-    const rand = mkRng(Number(audioSeed) & 0x7FFFFFFF);
+    const rand = mkRng(audioSeed);
 
     ctx.clearRect(0, 0, size, size);
     drawBg(ctx, size, rand);
