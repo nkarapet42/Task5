@@ -1,6 +1,7 @@
 using System.IO.Compression;
-using NAudio.MediaFoundation;
-using NAudio.Wave;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Text;
 
 namespace MusicStore.Services;
 
@@ -188,45 +189,82 @@ public class AudioExportService : IAudioExportService
 
     private static byte[] ToMp3(float[] left, float[] right, int sampleRate)
     {
-        const short channels = 2;
-        const short bitsPerSample = 16;
-        var blockAlign = channels * (bitsPerSample / 8);
-        var pcmBuffer = new byte[left.Length * blockAlign];
-
-        var offset = 0;
-        for (var i = 0; i < left.Length; i++)
-        {
-            var l = FloatToPcm16(left[i]);
-            var r = FloatToPcm16(right[i]);
-
-            pcmBuffer[offset++] = (byte)(l & 0xFF);
-            pcmBuffer[offset++] = (byte)((l >> 8) & 0xFF);
-            pcmBuffer[offset++] = (byte)(r & 0xFF);
-            pcmBuffer[offset++] = (byte)((r >> 8) & 0xFF);
-        }
-
-        var waveFormat = new WaveFormat(sampleRate, bitsPerSample, channels);
-        using var pcmStream = new MemoryStream(pcmBuffer);
-        using var rawPcm = new RawSourceWaveStream(pcmStream, waveFormat);
-
+        var wavBytes = ToWav(left, right, sampleRate);
+        var tempWavPath = Path.Combine(Path.GetTempPath(), $"musicstore-{Guid.NewGuid():N}.wav");
         var tempMp3Path = Path.Combine(Path.GetTempPath(), $"musicstore-{Guid.NewGuid():N}.mp3");
 
         try
         {
-            MediaFoundationEncoder.EncodeToMp3(rawPcm, tempMp3Path, 192000);
+            File.WriteAllBytes(tempWavPath, wavBytes);
+
+            var psi = new ProcessStartInfo
+            {
+                FileName = "ffmpeg",
+                Arguments = $"-y -hide_banner -loglevel error -i \"{tempWavPath}\" -codec:a libmp3lame -q:a 2 \"{tempMp3Path}\"",
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(psi)
+                ?? throw new InvalidOperationException("Failed to start ffmpeg process.");
+
+            var stdErr = process.StandardError.ReadToEnd();
+            process.WaitForExit();
+
+            if (process.ExitCode != 0 || !File.Exists(tempMp3Path))
+                throw new InvalidOperationException($"MP3 encoding failed via ffmpeg. {stdErr}");
+
             return File.ReadAllBytes(tempMp3Path);
         }
-        catch (Exception ex)
+        catch (Win32Exception ex)
         {
-            throw new InvalidOperationException("MP3 encoding failed on the server. Ensure Windows Media Foundation is available.", ex);
+            throw new InvalidOperationException("MP3 encoding failed because ffmpeg is not installed or not available in PATH.", ex);
         }
         finally
         {
-            if (File.Exists(tempMp3Path))
-            {
-                File.Delete(tempMp3Path);
-            }
+            if (File.Exists(tempWavPath)) File.Delete(tempWavPath);
+            if (File.Exists(tempMp3Path)) File.Delete(tempMp3Path);
         }
+    }
+
+    private static byte[] ToWav(float[] left, float[] right, int sampleRate)
+    {
+        const short channels = 2;
+        const short bitsPerSample = 16;
+        var bytesPerSample = bitsPerSample / 8;
+        var blockAlign = (short)(channels * bytesPerSample);
+        var byteRate = sampleRate * blockAlign;
+        var dataSize = left.Length * blockAlign;
+
+        using var ms = new MemoryStream(44 + dataSize);
+        using var bw = new BinaryWriter(ms, Encoding.ASCII, leaveOpen: true);
+
+        bw.Write(Encoding.ASCII.GetBytes("RIFF"));
+        bw.Write(36 + dataSize);
+        bw.Write(Encoding.ASCII.GetBytes("WAVE"));
+
+        bw.Write(Encoding.ASCII.GetBytes("fmt "));
+        bw.Write(16);
+        bw.Write((short)1);
+        bw.Write(channels);
+        bw.Write(sampleRate);
+        bw.Write(byteRate);
+        bw.Write(blockAlign);
+        bw.Write(bitsPerSample);
+
+        bw.Write(Encoding.ASCII.GetBytes("data"));
+        bw.Write(dataSize);
+
+        for (var i = 0; i < left.Length; i++)
+        {
+            bw.Write(FloatToPcm16(left[i]));
+            bw.Write(FloatToPcm16(right[i]));
+        }
+
+        bw.Flush();
+        return ms.ToArray();
     }
 
     private static short FloatToPcm16(float sample)
