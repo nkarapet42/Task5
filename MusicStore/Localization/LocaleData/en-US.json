@@ -1,0 +1,18 @@
+{
+  "locale": "en-US",
+  "displayName": "English (USA)",
+  "firstNames": ["James","John","Robert","Michael","William","David","Richard","Joseph","Thomas","Charles","Mary","Patricia","Jennifer","Linda","Barbara","Elizabeth","Susan","Jessica","Sarah","Karen","Emily","Ashley","Donna","Carol","Michelle","Amanda","Dorothy","Melissa","Deborah","Stephanie"],
+  "lastNames": ["Smith","Johnson","Williams","Brown","Jones","Garcia","Miller","Davis","Rodriguez","Martinez","Hernandez","Lopez","Gonzalez","Wilson","Anderson","Thomas","Taylor","Moore","Jackson","Martin","Lee","Perez","Thompson","White","Harris","Sanchez","Clark","Ramirez","Lewis","Robinson"],
+  "bandPrefixes": ["The","Dark","Neon","Iron","Crystal","Silver","Golden","Electric","Cosmic","Phantom","Midnight","Thunder","Blazing","Arctic","Velvet","Crimson","Lunar","Solar","Atomic","Sonic"],
+  "bandNouns": ["Wolves","Eagles","Rockets","Phoenix","Sharks","Tigers","Dragons","Panthers","Ravens","Falcons","Cobras","Vipers","Sparks","Flames","Waves","Storms","Ghosts","Legends","Rebels","Knights"],
+  "albumAdjectives": ["Eternal","Lost","Hidden","Broken","Silent","Burning","Frozen","Shattered","Dreaming","Rising","Falling","Fading","Endless","Wild","Dark","Electric","Neon","Golden","Crimson","Hollow"],
+  "albumNouns": ["Horizon","Echo","Storm","Silence","Journey","Dream","Shadow","Fire","Ocean","Mountain","Desert","River","Sky","Night","Dawn","Dusk","Thunder","Whisper","Legend","Myth"],
+  "genres": ["Rock","Pop","Jazz","Blues","Hip-Hop","Electronic","Classical","Country","R&B","Metal","Punk","Indie","Alternative","Folk","Reggae","Soul","Funk","Disco","Grunge","Ambient"],
+  "reviewPhrases": ["A stunning debut","An absolute masterpiece","Deeply moving and powerful","Catchy from the first note","A bold new direction","Hauntingly beautiful","Raw and emotional","Overflows with energy","A timeless classic","Surprisingly refreshing","Pure creative genius","A wild and unforgettable ride","Pushes boundaries in every way","Feels deeply personal","Radiates authentic emotion"],
+  "reviewConnectors": ["that will leave you breathless","you won't forget in a hurry","that defines a generation","blending styles effortlessly","with stunning production value","that resonates on every level","showcasing incredible range","from start to finish","unlike anything heard before","drawing you in immediately"],
+  "lyricsVerbs": ["run","fall","rise","burn","break","fly","breathe","fight","dream","shine","cry","walk","stay","leave","dance","call","hold","fade","chase","lose"],
+  "lyricsNouns": ["heart","light","road","night","fire","sky","soul","rain","time","hands","eyes","voice","wind","wave","storm","moon","star","door","path","truth"],
+  "lyricsAdjectives": ["cold","bright","lost","broken","still","endless","wild","hollow","fading","burning","silent","deep","far","lone","pale","dark","free","alive","heavy","bare"],
+  "lyricsFillers": ["again","forever","somehow","tonight","away","alone","inside","beyond","before","above","below","right here","through the dark","in the end","one more time","all along","like before","until dawn","without you","together now"],
+  "lyricsChorusStarters": ["I can't stop","We will","Don't you","I'll always","You and I","Nothing left","Here we","Let it","Feel the","Hold on"]
+}

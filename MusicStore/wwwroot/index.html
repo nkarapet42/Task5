@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎵 Music Store Showcase</title>
+  <link rel="stylesheet" href="/css/app.css" />
+</head>
+<body>
+
+<!-- ── Toolbar ──────────────────────────────────────────────────────── -->
+<div id="toolbar">
+  <h1>🎵 MusicStore</h1>
+
+  <div class="ctrl-group">
+    <label for="locale-select">Language</label>
+    <select id="locale-select"></select>
+  </div>
+
+  <div class="ctrl-group">
+    <label for="seed-input">Seed</label>
+    <input type="number" id="seed-input" value="42" min="0" step="1" />
+    <button class="icon-btn" id="rand-seed-btn" title="Randomize seed">🎲</button>
+  </div>
+
+  <div class="ctrl-group">
+    <label for="likes-slider">Likes/Song</label>
+    <input type="range" id="likes-slider" min="0" max="10" step="0.1" value="3" />
+    <span id="likes-val">3.0</span>
+  </div>
+
+  <div class="ctrl-group">
+    <button class="icon-btn export-btn" id="export-btn" title="Export current page as ZIP of WAV files">⬇ Export ZIP</button>
+  </div>
+
+  <div class="view-toggle">
+    <button id="view-table-btn" class="active">☰ Table</button>
+    <button id="view-gallery-btn">⊞ Gallery</button>
+  </div>
+</div>
+
+<!-- ── Main ─────────────────────────────────────────────────────────── -->
+<div id="main">
+
+  <!-- Table View -->
+  <div id="table-view">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Title</th>
+          <th>Artist</th>
+          <th>Album</th>
+          <th>Genre</th>
+          <th>Likes</th>
+        </tr>
+      </thead>
+      <tbody id="song-tbody"></tbody>
+    </table>
+    <div id="pagination"></div>
+  </div>
+
+  <!-- Gallery View -->
+  <div id="gallery-view" class="hidden"></div>
+
+</div>
+
+<!-- CDN Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<!-- App scripts -->
+<script src="/js/coverCanvas.js"></script>
+<script src="/js/audioEngine.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "locale": "de-DE",
+  "displayName": "Deutsch (Deutschland)",
+  "firstNames": ["Hans","Klaus","Werner","Dieter","Helmut","Thomas","Michael","Andreas","Stefan","Christian","Petra","Sabine","Monika","Ursula","Brigitte","Heike","Claudia","Angelika","Susanne","Nicole","Maria","Anna","Lena","Jana","Katharina","Sophie","Lisa","Julia","Emma","Laura"],
+  "lastNames": ["Müller","Schmidt","Schneider","Fischer","Weber","Meyer","Wagner","Becker","Schulz","Hoffmann","Schäfer","Koch","Bauer","Richter","Klein","Wolf","Schröder","Neumann","Schwarz","Zimmermann","Braun","Krüger","Hofmann","Hartmann","Lange","Schmitt","Werner","Schmitz","Krause","Meier"],
+  "bandPrefixes": ["Die","Schwarze","Rote","Eiserne","Stählerne","Goldene","Silberne","Dunkle","Kalte","Wilde","Blaue","Grüne","Freie","Alte","Neue","Starke","Tiefe","Hohe","Schnelle","Mutige"],
+  "bandNouns": ["Wölfe","Adler","Falken","Raben","Drachen","Ritter","Stürme","Flammen","Wellen","Geister","Krieger","Helden","Träumer","Kämpfer","Löwen","Bären","Füchse","Eulen","Krähen","Schwäne"],
+  "albumAdjectives": ["Ewig","Verloren","Versteckt","Gebrochen","Still","Brennend","Gefroren","Zerschmettert","Träumend","Aufsteigend","Fallend","Verblassend","Endlos","Wild","Dunkel","Elektrisch","Neon","Golden","Scharlach","Hohl"],
+  "albumNouns": ["Horizont","Echo","Sturm","Stille","Reise","Traum","Schatten","Feuer","Ozean","Berg","Wüste","Fluss","Himmel","Nacht","Morgengrauen","Dämmerung","Donner","Flüstern","Legende","Mythos"],
+  "genres": ["Rock","Pop","Jazz","Blues","Hip-Hop","Elektronik","Klassik","Schlager","R&B","Metal","Punk","Indie","Alternative","Folk","Reggae","Soul","Funk","Disco","Grunge","Ambient"],
+  "reviewPhrases": ["Ein atemberaubendes Debüt","Ein absolutes Meisterwerk","Tief bewegend und kraftvoll","Von der ersten Note an mitreißend","Eine mutige neue Richtung","Gespenstisch schön","Roh und emotional","Strotzt vor Energie","Ein zeitloser Klassiker","Überraschend erfrischend","Reines kreatives Genie","Eine wilde und unvergessliche Reise","Überschreitet in jeder Hinsicht Grenzen","Fühlt sich zutiefst persönlich an","Strahlt echte Emotion aus"],
+  "reviewConnectors": ["das dich atemlos zurücklässt","das du so schnell nicht vergessen wirst","das eine Generation definiert","das Stile mühelos verbindet","mit beeindruckendem Produktionswert","das auf jeder Ebene nachhallt","das eine unglaubliche Bandbreite zeigt","von Anfang bis Ende","wie man es noch nie gehört hat","das einen sofort in seinen Bann zieht"],
+  "lyricsVerbs": ["laufen","fallen","steigen","brennen","brechen","fliegen","atmen","kämpfen","träumen","leuchten","weinen","gehen","bleiben","verlassen","tanzen","rufen","halten","verblassen","jagen","verlieren"],
+  "lyricsNouns": ["Herz","Licht","Straße","Nacht","Feuer","Himmel","Seele","Regen","Zeit","Hände","Augen","Stimme","Wind","Welle","Sturm","Mond","Stern","Tür","Pfad","Wahrheit"],
+  "lyricsAdjectives": ["kalt","hell","verloren","gebrochen","still","endlos","wild","leer","verblassend","brennend","schweigend","tief","weit","allein","blass","dunkel","frei","lebendig","schwer","nackt"],
+  "lyricsFillers": ["wieder","für immer","irgendwie","heute Nacht","fort","allein","innen","jenseits","zuvor","darüber","darunter","genau hier","durch die Dunkelheit","am Ende","noch einmal","schon immer","wie zuvor","bis zum Morgengrauen","ohne dich","gemeinsam jetzt"],
+  "lyricsChorusStarters": ["Ich kann nicht","Wir werden","Kannst du nicht","Ich werde immer","Du und ich","Nichts bleibt","Hier sind wir","Lass es","Fühl die","Halt durch"]
+}
